@@ -305,7 +305,7 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
       <div id="migrateBanner"></div>
       <label class="searchbar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" placeholder="Kalite kodu veya renk kodu yaz… (ör. 2451)" autocomplete="off" spellcheck="false">
+        <input id="q" placeholder="Kalite kodu yaz… (ör. 5076)" inputmode="search" autocomplete="off" spellcheck="false">
         <button class="btn ghost small" id="qClear" hidden>Temizle</button>
       </label>
       <div class="result-meta">
@@ -623,9 +623,9 @@ function renderResults(){
   if (q){
     const exact = list.filter(s => norm(s.quality) === q);
     const partial = list.filter(s => norm(s.quality) !== q && norm(s.quality).includes(q));
-    const byColor = list.filter(s => !norm(s.quality).includes(q) && (s.colors||[]).some(c => norm(c) === q));
-    colorHit = byColor.length ? q : null;
-    list = [...exact, ...partial, ...byColor];
+    const starts = partial.filter(s => norm(s.quality).startsWith(q));
+    const inner = partial.filter(s => !norm(s.quality).startsWith(q));
+    list = [...exact, ...starts, ...inner];
   } else {
     list.sort($("#sort").value === "az"
       ? (a,b) => String(a.quality).localeCompare(String(b.quality),"tr",{numeric:true})
@@ -633,7 +633,7 @@ function renderResults(){
   }
   $("#sort").hidden = !!q;
   $("#resCount").innerHTML = q
-    ? (list.length ? `<strong>${list.length}</strong> sonuç${colorHit?` · <span>${esc($("#q").value.trim())} renk kodunu kullanan kaliteler dahil</span>`:""}` : "")
+    ? (list.length ? `<strong>${list.length}</strong> sonuç` : "")
     : `Arşivde <strong>${shoes.length}</strong> kayıt`;
   const box = $("#results");
   if (!shoes.length){
