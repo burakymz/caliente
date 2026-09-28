@@ -7,6 +7,12 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#b3122e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Caliente">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Figtree:wght@400;500;600;700;800&display=swap">
@@ -223,6 +229,8 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
 .spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:760px){.input,.searchbar input,.tagbox input,select,textarea{font-size:16px!important}}
+@media (display-mode: standalone){header.top{padding-top:env(safe-area-inset-top,0px)}body{padding-bottom:env(safe-area-inset-bottom,0px)}}
 </style>
 </head>
 <body>
