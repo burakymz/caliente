@@ -240,7 +240,7 @@ nav.tabs button.tab-icon[aria-selected="true"]::after{left:10px;right:10px}
 .lockcard h2{font-size:24px}
 .lockcard form{display:flex;flex-direction:column;gap:12px;width:100%}
 .plist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
-.prow{display:grid;grid-template-columns:56px minmax(0,1fr) 180px;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.prow{display:grid;grid-template-columns:56px minmax(0,1fr) 226px;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
 .prow:first-child{border-top:0}
 .prow .pimg{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .prow .pimg img{width:100%;height:100%;object-fit:cover}
@@ -253,7 +253,13 @@ nav.tabs button.tab-icon[aria-selected="true"]::after{left:10px;right:10px}
 .pstat{font-size:11.5px;color:var(--ink-3);text-align:right;margin-top:4px;min-height:1.2em}
 .pstat.ok{color:#1f8a4c}.pstat.bad{color:var(--danger)}
 .prow.empty-price .pin{border-style:dashed}
-@media (max-width:560px){.prow{grid-template-columns:48px minmax(0,1fr) 128px;gap:10px;padding:10px}.prow .pimg{width:48px;height:48px}.prow .chips{display:none}}
+.pwrap{display:flex;gap:6px;align-items:center}.pwrap .pin{flex:1;min-width:0}
+.nbtn{position:relative;flex:none;width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink-3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s,background .15s}
+.nbtn:hover{color:var(--ink);border-color:var(--ink-3)}
+.nbtn.has{color:var(--red);border-color:var(--red);background:var(--red-soft)}
+.nbtn.has svg path{fill:currentColor;fill-opacity:.18}
+.pnote{grid-column:2 / -1;font-size:13px;color:var(--ink-2);background:var(--surface);border-radius:8px;padding:6px 10px;white-space:pre-wrap;overflow-wrap:anywhere;cursor:pointer;margin-top:-2px}
+@media (max-width:560px){.prow{grid-template-columns:48px minmax(0,1fr) 176px;gap:10px;padding:10px}.prow .pimg{width:48px;height:48px}.prow .chips{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:760px){.input,.searchbar input,.tagbox input,select,textarea{font-size:16px!important}}
 @media (display-mode: standalone){header.top{padding-top:env(safe-area-inset-top,0px)}body{padding-bottom:env(safe-area-inset-bottom,0px)}}
@@ -678,7 +684,8 @@ function renderPrices(){
     return `<div class="prow ${pr?.price != null ? "" : "empty-price"}" data-id="${esc(s.id)}">
       <button class="pimg" data-open="${esc(s.id)}" aria-label="${esc(s.quality)} detayı" style="border:0;padding:0;cursor:pointer">${ph && blob(ph) ? `<img src="${blob(ph)}" alt="" loading="lazy">` : heelSvg(36,22,"var(--line)")}</button>
       <div style="min-width:0"><div class="pq">${esc(s.quality)}</div><div class="chips">${(s.colors || []).map(c => chipHTML(c)).join("")}</div></div>
-      <div><label class="pin"><input id="price-${esc(s.id)}" inputmode="decimal" placeholder="—" value="${esc(fmtPrice(pr?.price))}" aria-label="${esc(s.quality)} fiyatı"><span>₺</span></label><div class="pstat">${stat}</div></div>
+      <div><div class="pwrap"><label class="pin"><input id="price-${esc(s.id)}" inputmode="decimal" placeholder="—" value="${esc(fmtPrice(pr?.price))}" aria-label="${esc(s.quality)} fiyatı"><span>₺</span></label><button type="button" class="nbtn ${pr?.note ? "has" : ""}" data-note="${esc(s.id)}" aria-label="${esc(s.quality)} notu" title="${pr?.note ? "Notu düzenle" : "Not ekle"}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg></button></div><div class="pstat">${stat}</div></div>
+      ${pr?.note ? `<div class="pnote" data-note="${esc(s.id)}">${esc(pr.note)}</div>` : ""}
     </div>`;
   }).join("")}</div>`;
   box.querySelectorAll("[data-open]").forEach(b => b.onclick = () => openShoe(b.dataset.open));
@@ -687,6 +694,7 @@ function renderPrices(){
     inp.addEventListener("focus", () => inp.select());
     inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); inp.blur(); } if (e.key === "Escape"){ inp.value = fmtPrice(prices.get(id)?.price); inp.blur(); } });
     inp.addEventListener("blur", () => savePrice(id, inp, st, row));
+    row.querySelectorAll("[data-note]").forEach(b => b.onclick = () => openNote(id));
   });
 }
 async function savePrice(id, inp, st, row){
@@ -694,16 +702,48 @@ async function savePrice(id, inp, st, row){
   if (Number.isNaN(val)){ st.textContent = "Geçersiz fiyat"; st.className = "pstat bad"; return; }
   if (val === (cur == null ? null : Number(cur))){ inp.value = fmtPrice(cur); return; }
   st.textContent = "Kaydediliyor…"; st.className = "pstat";
-  const res = val == null
+  const keepRow = !!prices.get(id)?.note;
+  const res = (val == null && !keepRow)
     ? await sb.from("prices").delete().eq("shoe_id", id)
     : await sb.from("prices").upsert({ shoe_id: id, price: val, updated_at: new Date().toISOString() }).select().single();
   if (res.error){ st.textContent = "Kaydedilemedi, tekrar dene"; st.className = "pstat bad"; return; }
-  if (val == null) prices.delete(id); else prices.set(id, res.data);
+  if (val == null && !keepRow) prices.delete(id); else prices.set(id, res.data);
   inp.value = fmtPrice(val);
   row.classList.toggle("empty-price", val == null);
   st.textContent = val == null ? "Fiyat silindi" : "Kaydedildi ✓"; st.className = "pstat ok";
   const filled = shoes.filter(s => prices.get(s.id)?.price != null).length;
   $("#plCount").innerHTML = `<strong>${shoes.length}</strong> model · ${filled} fiyatlı · ${shoes.length - filled} fiyatsız`;
+}
+
+function openNote(id){
+  const s = shoes.find(x => x.id === id); if (!s || !pricesUnlocked) return;
+  const cur = prices.get(id)?.note || "";
+  $("#modalRoot").innerHTML = `<div class="modal-back"><form class="modal narrow" id="noteForm"><div class="mbody">
+    <button type="button" class="close" aria-label="Kapat">×</button>
+    <div><div class="label">Not</div><h2 style="font-size:30px">${esc(s.quality)}</h2></div>
+    <textarea class="input" id="noteText" rows="5" maxlength="1000" placeholder="Bu modelle ilgili notun…" style="min-height:130px">${esc(cur)}</textarea>
+    <div class="err" id="noteErr"></div>
+    <div class="row end">
+      ${cur ? '<button type="button" class="btn danger" id="noteDel" style="margin-right:auto">Notu sil</button>' : ""}
+      <button type="button" class="btn" data-close>Vazgeç</button>
+      <button class="btn primary" id="noteSave">Kaydet</button>
+    </div>
+  </div></form></div>`;
+  bindModalClose();
+  const ta = $("#noteText"); setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 30);
+  const save = async (text) => {
+    $("#noteSave").disabled = true;
+    const pr = prices.get(id);
+    let res;
+    if (!text && (pr?.price == null)) res = await sb.from("prices").delete().eq("shoe_id", id);
+    else res = await sb.from("prices").upsert({ shoe_id: id, note: text || null, updated_at: new Date().toISOString() }).select().single();
+    $("#noteSave").disabled = false;
+    if (res.error){ $("#noteErr").textContent = "Kaydedilemedi: " + res.error.message; return; }
+    if (!text && pr?.price == null) prices.delete(id); else prices.set(id, res.data);
+    closeModal(); renderPrices(); toast(text ? "Not kaydedildi" : "Not silindi");
+  };
+  $("#noteForm").onsubmit = e => { e.preventDefault(); save(ta.value.trim()); };
+  if ($("#noteDel")) $("#noteDel").onclick = () => save("");
 }
 
 function openPassModal(){
