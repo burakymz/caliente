@@ -228,6 +228,27 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
 .center-screen{min-height:70vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px}
 .spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Profil & fiyat listesi */
+.profile-btn[aria-selected="true"]{background:var(--red-soft);color:var(--red)}
+.lockcard{max-width:440px;align-items:flex-start}
+.lockcard .lockic{width:46px;height:46px;border-radius:12px;background:var(--red-soft);color:var(--red);display:flex;align-items:center;justify-content:center}
+.lockcard h2{font-size:24px}
+.lockcard form{display:flex;flex-direction:column;gap:12px;width:100%}
+.plist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+.prow{display:grid;grid-template-columns:56px minmax(0,1fr) 180px;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.prow:first-child{border-top:0}
+.prow .pimg{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.prow .pimg img{width:100%;height:100%;object-fit:cover}
+.prow .pq{font-weight:700;font-size:18px;line-height:1.15}
+.prow .chips{margin-top:5px}
+.pin{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--bg);transition:border-color .15s,box-shadow .15s}
+.pin:focus-within{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+.pin input{border:0;outline:0;background:transparent;width:100%;min-width:0;padding:10px 0;font-weight:700;font-size:17px;text-align:right;font-variant-numeric:tabular-nums}
+.pin span{color:var(--ink-3);font-weight:700}
+.pstat{font-size:11.5px;color:var(--ink-3);text-align:right;margin-top:4px;min-height:1.2em}
+.pstat.ok{color:#1f8a4c}.pstat.bad{color:var(--danger)}
+.prow.empty-price .pin{border-style:dashed}
+@media (max-width:560px){.prow{grid-template-columns:48px minmax(0,1fr) 128px;gap:10px;padding:10px}.prow .pimg{width:48px;height:48px}.prow .chips{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:760px){.input,.searchbar input,.tagbox input,select,textarea{font-size:16px!important}}
 @media (display-mode: standalone){header.top{padding-top:env(safe-area-inset-top,0px)}body{padding-bottom:env(safe-area-inset-bottom,0px)}}
@@ -281,14 +302,10 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
         <button role="tab" data-tab="kartela" id="tab-kartela">Renk Kartelası</button>
       </nav>
       <div class="menu-wrap">
-        <button class="btn ghost small" id="menuBtn" aria-haspopup="true" aria-expanded="false">
+        <button class="btn ghost small profile-btn" id="tab-profil" data-tab="profil" aria-label="Profil">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
           <span id="whoami"></span>
         </button>
-        <div class="menu" id="menu" hidden>
-          <button id="mnPass">Şifreyi değiştir</button>
-          <button id="mnOut">Çıkış yap</button>
-        </div>
       </div>
     </div>
   </header>
@@ -400,6 +417,46 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
         </div>
       </div>
     </section>
+      <!-- PROFİL -->
+    <section id="view-profil" hidden>
+      <div class="page-head">
+        <div>
+          <div class="label">Profil</div>
+          <h1 id="pfName">Hesabım</h1>
+        </div>
+        <div class="row">
+          <button class="btn" id="pfPass">Şifreyi değiştir</button>
+          <button class="btn" id="pfOut">Çıkış yap</button>
+        </div>
+      </div>
+
+      <div class="panel lockcard" id="priceLock">
+        <div class="lockic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+        <div><h2>Fiyat listesi</h2><p class="muted" style="margin:6px 0 0">Fiyatlar sadece burada görünür. Görmek için giriş şifreni tekrar gir.</p></div>
+        <form id="plForm" autocomplete="off">
+          <label class="field"><span>Şifre</span><input class="input" type="password" id="plPass" autocomplete="current-password"></label>
+          <div class="err" id="plErr"></div>
+          <button class="btn primary" id="plBtn">Fiyatları göster</button>
+        </form>
+      </div>
+
+      <div id="priceArea" hidden>
+        <div class="result-meta" style="margin-top:0">
+          <div><h2 style="font-size:26px">Fiyat listesi</h2><div class="muted" id="plCount" style="margin-top:4px"></div></div>
+          <button class="btn" id="plLock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Kilitle</button>
+        </div>
+        <div class="row" style="margin-bottom:14px">
+          <input class="input" id="plQ" placeholder="Kalite kodu ara" style="max-width:280px" inputmode="search">
+          <select class="input" id="plFilter" style="width:auto">
+            <option value="all">Tüm modeller</option>
+            <option value="missing">Fiyatı girilmemişler</option>
+            <option value="set">Fiyatı girilmişler</option>
+          </select>
+        </div>
+        <div id="priceList"></div>
+        <p class="hint" style="margin-top:12px">Fiyatı yaz, Enter'a bas veya başka yere dokun; otomatik kaydedilir. Silmek için kutuyu boşalt.</p>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -485,6 +542,7 @@ async function reload(){
   colorMap = new Map(colors.map(c => [norm(c.code), c]));
   await ensureUrls(allPaths());
   renderResults(); renderKartela(); renderTags(); renderThumbs(); renderCPrev();
+  if (!document.activeElement?.closest?.('#priceList')) renderPrices();
   checkMigration();
 }
 function scheduleReload(){ clearTimeout(reloadTimer); reloadTimer = setTimeout(reload, 250); }
@@ -501,6 +559,7 @@ function enterApp(){
   startData();
   const h = (location.hash||"").replace("#","");
   go(["ara","yeni","kartela"].includes(h) ? h : "ara");
+  $("#pfName").textContent = (me?.email || "").split("@")[0] || "Hesabım";
 }
 sb.auth.onAuthStateChange((ev, session) => {
   me = session?.user || null;
@@ -551,10 +610,92 @@ async function checkMigration(){
 }
 
 // ---- menu ----
-$("#menuBtn").onclick = e => { e.stopPropagation(); const m=$("#menu"); m.hidden=!m.hidden; $("#menuBtn").setAttribute("aria-expanded", String(!m.hidden)); };
-document.addEventListener("click", () => { $("#menu").hidden = true; });
-$("#mnOut").onclick = async () => { await sb.auth.signOut(); showLogin(); };
-$("#mnPass").onclick = () => openPassModal();
+// ---- profil & fiyat listesi ----
+$("#pfPass").onclick = () => openPassModal();
+$("#pfOut").onclick = async () => { lockPrices(); await sb.auth.signOut(); showLogin(); };
+var prices = new Map(), pricesUnlocked = false;
+function lockPrices(){
+  pricesUnlocked = false; prices = new Map();
+  $("#priceArea").hidden = true; $("#priceLock").hidden = false;
+  $("#plPass").value = ""; $("#plErr").textContent = ""; $("#priceList").innerHTML = "";
+}
+$("#plLock").onclick = () => { lockPrices(); $("#plPass").focus(); };
+$("#plForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const p = $("#plPass").value;
+  $("#plErr").textContent = "";
+  if (!p){ $("#plErr").textContent = "Şifreni gir."; return; }
+  if (!me?.email){ $("#plErr").textContent = "Oturum bulunamadı, sayfayı yenile."; return; }
+  $("#plBtn").disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email: me.email, password: p });
+  if (error){
+    $("#plBtn").disabled = false;
+    $("#plErr").textContent = /invalid/i.test(error.message) ? "Şifre hatalı." : "Doğrulanamadı: " + error.message;
+    return;
+  }
+  const r = await sb.from("prices").select("*");
+  $("#plBtn").disabled = false;
+  if (r.error){ $("#plErr").textContent = "Fiyatlar yüklenemedi: " + r.error.message; return; }
+  prices = new Map(r.data.map(x => [x.shoe_id, x]));
+  pricesUnlocked = true; $("#plPass").value = "";
+  $("#priceLock").hidden = true; $("#priceArea").hidden = false;
+  renderPrices();
+});
+const fmtPrice = n => (n == null || n === "") ? "" : Number(n).toLocaleString("tr-TR", { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 });
+function parsePrice(s){
+  s = String(s || "").trim().replace(/[₺\s]/g, "").replace(/tl$/i, "");
+  if (!s) return null;
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+  const n = Number(s);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : NaN;
+}
+$("#plQ").addEventListener("input", renderPrices);
+$("#plFilter").addEventListener("change", renderPrices);
+function renderPrices(){
+  if (!pricesUnlocked) return;
+  const q = norm($("#plQ").value), f = $("#plFilter").value;
+  const has = s => prices.get(s.id)?.price != null;
+  const filled = shoes.filter(has).length;
+  $("#plCount").innerHTML = `<strong>${shoes.length}</strong> model · ${filled} fiyatlı · ${shoes.length - filled} fiyatsız`;
+  const list = shoes.filter(s => (!q || norm(s.quality).includes(q)) && (f === "all" || (f === "set") === has(s)))
+    .sort((a,b) => String(a.quality).localeCompare(String(b.quality), "tr", { numeric: true }));
+  const box = $("#priceList");
+  if (!shoes.length){ box.innerHTML = `<div class="empty"><h3>Henüz model yok</h3><p>Yeni Kayıt'tan eklediğin modeller burada fiyatlarıyla listelenir.</p></div>`; return; }
+  if (!list.length){ box.innerHTML = `<div class="empty"><h3>Eşleşen model yok</h3></div>`; return; }
+  box.innerHTML = `<div class="plist">${list.map(s => {
+    const pr = prices.get(s.id), ph = (s.photos || [])[0];
+    const stat = pr?.price != null ? "Güncelleme: " + fmtDate(Date.parse(pr.updated_at)) : "Fiyat girilmemiş";
+    return `<div class="prow ${pr?.price != null ? "" : "empty-price"}" data-id="${esc(s.id)}">
+      <button class="pimg" data-open="${esc(s.id)}" aria-label="${esc(s.quality)} detayı" style="border:0;padding:0;cursor:pointer">${ph && blob(ph) ? `<img src="${blob(ph)}" alt="" loading="lazy">` : heelSvg(36,22,"var(--line)")}</button>
+      <div style="min-width:0"><div class="pq">${esc(s.quality)}</div><div class="chips">${(s.colors || []).map(c => chipHTML(c)).join("")}</div></div>
+      <div><label class="pin"><input id="price-${esc(s.id)}" inputmode="decimal" placeholder="—" value="${esc(fmtPrice(pr?.price))}" aria-label="${esc(s.quality)} fiyatı"><span>₺</span></label><div class="pstat">${stat}</div></div>
+    </div>`;
+  }).join("")}</div>`;
+  box.querySelectorAll("[data-open]").forEach(b => b.onclick = () => openShoe(b.dataset.open));
+  box.querySelectorAll(".prow").forEach(row => {
+    const inp = row.querySelector("input"), st = row.querySelector(".pstat"), id = row.dataset.id;
+    inp.addEventListener("focus", () => inp.select());
+    inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); inp.blur(); } if (e.key === "Escape"){ inp.value = fmtPrice(prices.get(id)?.price); inp.blur(); } });
+    inp.addEventListener("blur", () => savePrice(id, inp, st, row));
+  });
+}
+async function savePrice(id, inp, st, row){
+  const val = parsePrice(inp.value), cur = prices.get(id)?.price ?? null;
+  if (Number.isNaN(val)){ st.textContent = "Geçersiz fiyat"; st.className = "pstat bad"; return; }
+  if (val === (cur == null ? null : Number(cur))){ inp.value = fmtPrice(cur); return; }
+  st.textContent = "Kaydediliyor…"; st.className = "pstat";
+  const res = val == null
+    ? await sb.from("prices").delete().eq("shoe_id", id)
+    : await sb.from("prices").upsert({ shoe_id: id, price: val, updated_at: new Date().toISOString() }).select().single();
+  if (res.error){ st.textContent = "Kaydedilemedi, tekrar dene"; st.className = "pstat bad"; return; }
+  if (val == null) prices.delete(id); else prices.set(id, res.data);
+  inp.value = fmtPrice(val);
+  row.classList.toggle("empty-price", val == null);
+  st.textContent = val == null ? "Fiyat silindi" : "Kaydedildi ✓"; st.className = "pstat ok";
+  const filled = shoes.filter(s => prices.get(s.id)?.price != null).length;
+  $("#plCount").innerHTML = `<strong>${shoes.length}</strong> model · ${filled} fiyatlı · ${shoes.length - filled} fiyatsız`;
+}
 
 function openPassModal(){
   $("#modalRoot").innerHTML = `<div class="modal-back"><form class="modal narrow" id="pwForm"><div class="mbody">
@@ -578,7 +719,8 @@ function openPassModal(){
 
 // ---- tabs ----
 function go(tab){
-  for (const t of ["ara","yeni","kartela"]){
+  if (tab !== "profil" && typeof lockPrices === "function") lockPrices();
+  for (const t of ["ara","yeni","kartela","profil"]){
     $("#view-"+t).hidden = t !== tab;
     $("#tab-"+t).setAttribute("aria-selected", String(t===tab));
   }
