@@ -474,7 +474,7 @@ nav.tabs button.tab-icon[aria-selected="true"]::after{left:10px;right:10px}
           <button class="btn" id="plLock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Kilitle</button>
         </div>
         <div class="row" style="margin-bottom:14px">
-          <input class="input" id="plQ" placeholder="Kalite kodu ara" style="max-width:280px" inputmode="search">
+          <input class="input" id="plQ" placeholder="Kalite kodu ara (baş harfleri)" style="max-width:280px" inputmode="search">
           <select class="input" id="plFilter" style="width:auto">
             <option value="all">Tüm modeller</option>
             <option value="missing">Fiyatı girilmemişler</option>
@@ -710,7 +710,7 @@ function renderPrices(){
   const q = norm($("#plQ").value), f = $("#plFilter").value, so = $("#plSort").value;
   const has = s => hasAny(prices.get(s.id));
   countLine();
-  const list = shoes.filter(s => (!q || norm(s.quality).includes(q)) && (f === "all" || (f === "set") === has(s)))
+  const list = shoes.filter(s => (!q || norm(s.quality).startsWith(q)) && (f === "all" || (f === "set") === has(s)))
     .sort(so === "az" ? (a,b) => String(a.quality).localeCompare(String(b.quality), "tr", { numeric: true })
         : so === "old" ? (a,b) => (a.createdAt||0) - (b.createdAt||0)
         : (a,b) => (b.createdAt||0) - (a.createdAt||0));
