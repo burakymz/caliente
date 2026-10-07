@@ -120,7 +120,9 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;left:1
 @media (max-width:760px){
   header.top .wrap{height:auto;flex-wrap:wrap;padding-block:10px;gap:8px}
   nav.tabs{order:3;width:100%;margin-left:0;overflow-x:auto}
-  nav.tabs button{flex:1;white-space:nowrap;padding:8px 10px}
+  nav.tabs button{flex:1 1 auto;white-space:nowrap;padding:8px 6px;font-size:13.5px}
+  nav.tabs{gap:0}
+  nav.tabs button.tab-icon{flex:0 0 auto;padding:8px 12px;min-width:40px}
   nav.tabs button[aria-selected="true"]::after{bottom:-4px}
   .menu-wrap{margin-left:auto}
   .logo .word{font-size:22px}
@@ -230,6 +232,9 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
 @keyframes spin{to{transform:rotate(360deg)}}
 /* Profil & fiyat listesi */
 .profile-btn[aria-selected="true"]{background:var(--red-soft);color:var(--red)}
+nav.tabs button.tab-icon{font-size:19px;font-weight:800;line-height:1;min-width:44px}
+nav.tabs button.tab-icon[aria-selected="true"]::after{left:10px;right:10px}
+@media (max-width:389px){nav.tabs button{font-size:12.5px;padding:8px 4px}nav.tabs button.tab-icon{min-width:34px;padding:8px 8px;font-size:17px}}
 .lockcard{max-width:440px;align-items:flex-start}
 .lockcard .lockic{width:46px;height:46px;border-radius:12px;background:var(--red-soft);color:var(--red);display:flex;align-items:center;justify-content:center}
 .lockcard h2{font-size:24px}
@@ -300,6 +305,7 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
         <button role="tab" data-tab="ara" id="tab-ara">Kalite Ara</button>
         <button role="tab" data-tab="yeni" id="tab-yeni">Yeni Kayıt</button>
         <button role="tab" data-tab="kartela" id="tab-kartela">Renk Kartelası</button>
+        <button role="tab" data-tab="fiyat" id="tab-fiyat" class="tab-icon" aria-label="Fiyatlar" title="Fiyatlar">$</button>
       </nav>
       <div class="menu-wrap">
         <button class="btn ghost small profile-btn" id="tab-profil" data-tab="profil" aria-label="Profil">
@@ -429,7 +435,10 @@ mark{background:var(--red-soft);color:var(--red);border-radius:3px;padding:0 1px
           <button class="btn" id="pfOut">Çıkış yap</button>
         </div>
       </div>
+    </section>
 
+    <!-- FİYATLAR -->
+    <section id="view-fiyat" hidden>
       <div class="panel lockcard" id="priceLock">
         <div class="lockic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
         <div><h2>Fiyat listesi</h2><p class="muted" style="margin:6px 0 0">Fiyatlar sadece burada görünür. Görmek için giriş şifreni tekrar gir.</p></div>
@@ -558,7 +567,7 @@ function enterApp(){
   $("#whoami").textContent = (me?.email || "").split("@")[0];
   startData();
   const h = (location.hash||"").replace("#","");
-  go(["ara","yeni","kartela"].includes(h) ? h : "ara");
+  go(["ara","yeni","kartela","fiyat","profil"].includes(h) ? h : "ara");
   $("#pfName").textContent = (me?.email || "").split("@")[0] || "Hesabım";
 }
 sb.auth.onAuthStateChange((ev, session) => {
@@ -719,8 +728,8 @@ function openPassModal(){
 
 // ---- tabs ----
 function go(tab){
-  if (tab !== "profil" && typeof lockPrices === "function") lockPrices();
-  for (const t of ["ara","yeni","kartela","profil"]){
+  if (tab !== "fiyat" && typeof lockPrices === "function") lockPrices();
+  for (const t of ["ara","yeni","kartela","fiyat","profil"]){
     $("#view-"+t).hidden = t !== tab;
     $("#tab-"+t).setAttribute("aria-selected", String(t===tab));
   }
