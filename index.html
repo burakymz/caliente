@@ -728,7 +728,6 @@ function renderPrices(){
         ${pr?.price != null ? `<div class="plegacy"><span>Önceki fiyat (kategorisiz): <strong>${money(pr.price)}</strong></span><button type="button" class="btn small" data-legacy>Kaldır</button></div>` : ""}
         <div class="pstat"></div>
       </div>` : ""}
-      ${pr?.note ? `<div class="pnote" data-note="${esc(s.id)}">${esc(pr.note)}</div>` : ""}
     </div>`;
   }).join("")}</div>`;
   box.querySelectorAll("[data-open]").forEach(b => b.onclick = () => openShoe(b.dataset.open));
