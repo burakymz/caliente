@@ -460,9 +460,9 @@ nav.tabs button.tab-icon[aria-selected="true"]::after{left:10px;right:10px}
     <section id="view-fiyat" hidden>
       <div class="panel lockcard" id="priceLock">
         <div class="lockic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
-        <div><h2>Fiyat listesi</h2><p class="muted" style="margin:6px 0 0">Fiyatlar sadece burada görünür. Görmek için giriş şifreni tekrar gir.</p></div>
+        <div><h2>Fiyat listesi</h2><p class="muted" style="margin:6px 0 0">Fiyatlar sadece burada görünür. Görmek için fiyat şifresini gir.</p></div>
         <form id="plForm" autocomplete="off">
-          <label class="field"><span>Şifre</span><input class="input" type="password" id="plPass" autocomplete="current-password"></label>
+          <label class="field"><span>Şifre</span><input class="input" type="password" id="plPass" autocomplete="off"></label>
           <div class="err" id="plErr"></div>
           <button class="btn primary" id="plBtn">Fiyatları göster</button>
         </form>
@@ -646,9 +646,9 @@ async function checkMigration(){
 // ---- profil & fiyat listesi ----
 $("#pfPass").onclick = () => openPassModal();
 $("#pfOut").onclick = async () => { lockPrices(); await sb.auth.signOut(); showLogin(); };
-var prices = new Map(), pricesUnlocked = false;
+var prices = new Map(), pricesUnlocked = false, pricePass = null;
 function lockPrices(){
-  pricesUnlocked = false; prices = new Map();
+  pricesUnlocked = false; prices = new Map(); pricePass = null;
   $("#priceArea").hidden = true; $("#priceLock").hidden = false;
   $("#plPass").value = ""; $("#plErr").textContent = ""; $("#priceList").innerHTML = "";
 }
@@ -657,20 +657,16 @@ $("#plForm").addEventListener("submit", async e => {
   e.preventDefault();
   const p = $("#plPass").value;
   $("#plErr").textContent = "";
-  if (!p){ $("#plErr").textContent = "Şifreni gir."; return; }
-  if (!me?.email){ $("#plErr").textContent = "Oturum bulunamadı, sayfayı yenile."; return; }
+  if (!p){ $("#plErr").textContent = "Fiyat şifresini gir."; return; }
   $("#plBtn").disabled = true;
-  const { error } = await sb.auth.signInWithPassword({ email: me.email, password: p });
-  if (error){
-    $("#plBtn").disabled = false;
-    $("#plErr").textContent = /invalid/i.test(error.message) ? "Şifre hatalı." : "Doğrulanamadı: " + error.message;
+  const r = await sb.rpc("prices_list", { p });
+  $("#plBtn").disabled = false;
+  if (r.error){
+    $("#plErr").textContent = /wrong_password/.test(r.error.message) ? "Şifre hatalı." : "Fiyatlar yüklenemedi: " + r.error.message;
     return;
   }
-  const r = await sb.from("prices").select("*");
-  $("#plBtn").disabled = false;
-  if (r.error){ $("#plErr").textContent = "Fiyatlar yüklenemedi: " + r.error.message; return; }
-  prices = new Map(r.data.map(x => [x.shoe_id, x]));
-  pricesUnlocked = true; $("#plPass").value = "";
+  prices = new Map((r.data || []).map(x => [x.shoe_id, x]));
+  pricePass = p; pricesUnlocked = true; $("#plPass").value = "";
   $("#priceLock").hidden = true; $("#priceArea").hidden = false;
   renderPrices();
 });
@@ -686,7 +682,7 @@ function parsePrice(s){
 $("#plQ").addEventListener("input", renderPrices);
 $("#plFilter").addEventListener("change", renderPrices);
 $("#plSort").addEventListener("change", renderPrices);
-var CATS = [["sicak_astar","Sıcak Astar"],["kurk","Kürk"],["pelus","Peluş"],["deri","Deri"]];
+var CATS = [["kurk","Kürk"],["sicak_astar","Sıcak Astar"],["pelus","Peluş"],["deri","Deri"]];
 var openPriceId = null;
 const vOf = pr => (pr && pr.variants && typeof pr.variants === "object") ? pr.variants : {};
 const catVals = pr => CATS.map(([k]) => vOf(pr)[k]).filter(v => v != null && v !== "").map(Number);
@@ -736,7 +732,7 @@ function renderPrices(){
     row.querySelector(".psum").onclick = () => {
       openPriceId = openPriceId === id ? null : id;
       renderPrices();
-      if (openPriceId === id) setTimeout(() => { const f = document.getElementById(`pc-${id}-sicak_astar`); f && f.focus(); }, 30);
+      if (openPriceId === id) setTimeout(() => { const f = document.getElementById(`pc-${id}-${CATS[0][0]}`); f && f.focus(); }, 30);
     };
     row.querySelectorAll("[data-note]").forEach(b => b.onclick = () => openNote(id));
     const st = row.querySelector(".pcats .pstat");
@@ -757,8 +753,8 @@ async function saveRow(id, patch, st, row, okText){
   const next = { ...pr, ...patch };
   if (st){ st.textContent = "Kaydediliyor…"; st.className = "pstat"; }
   const res = (!hasAny(next) && !next.note)
-    ? await sb.from("prices").delete().eq("shoe_id", id)
-    : await sb.from("prices").upsert({ shoe_id: id, ...patch, updated_at: new Date().toISOString() }).select().single();
+    ? await sb.rpc("prices_delete", { p: pricePass, sid: id })
+    : await sb.rpc("prices_upsert", { p: pricePass, sid: id, patch });
   if (res.error){ if (st){ st.textContent = "Kaydedilemedi, tekrar dene"; st.className = "pstat bad"; } return false; }
   if (!hasAny(next) && !next.note) prices.delete(id); else prices.set(id, res.data);
   if (st){ st.textContent = okText; st.className = "pstat ok"; }
@@ -798,8 +794,8 @@ function openNote(id){
     $("#noteSave").disabled = true;
     const pr = prices.get(id);
     let res;
-    if (!text && !hasAny(pr)) res = await sb.from("prices").delete().eq("shoe_id", id);
-    else res = await sb.from("prices").upsert({ shoe_id: id, note: text || null, updated_at: new Date().toISOString() }).select().single();
+    if (!text && !hasAny(pr)) res = await sb.rpc("prices_delete", { p: pricePass, sid: id });
+    else res = await sb.rpc("prices_upsert", { p: pricePass, sid: id, patch: { note: text || null } });
     $("#noteSave").disabled = false;
     if (res.error){ $("#noteErr").textContent = "Kaydedilemedi: " + res.error.message; return; }
     if (!text && !hasAny(pr)) prices.delete(id); else prices.set(id, res.data);
