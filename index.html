@@ -682,7 +682,7 @@ function parsePrice(s){
 $("#plQ").addEventListener("input", renderPrices);
 $("#plFilter").addEventListener("change", renderPrices);
 $("#plSort").addEventListener("change", renderPrices);
-var CATS = [["kurk","Kürk"],["sicak_astar","Sıcak Astar"],["pelus","Peluş"],["deri","Deri"]];
+var CATS = [["deri","Deri"],["pelus","Peluş"],["sicak_astar","Sıcak Astar"],["kurk","Kürk"]];
 var openPriceId = null;
 const vOf = pr => (pr && pr.variants && typeof pr.variants === "object") ? pr.variants : {};
 const catVals = pr => CATS.map(([k]) => vOf(pr)[k]).filter(v => v != null && v !== "").map(Number);
